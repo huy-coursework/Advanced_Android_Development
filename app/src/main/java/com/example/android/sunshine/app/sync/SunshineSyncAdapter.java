@@ -150,15 +150,18 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
             if (buffer.length() == 0) {
                 // Stream was empty.  No point in parsing.
+                saveLocationStatus(getContext(), LOCATION_STATUS_SERVER_DOWN);
                 return;
             }
             forecastJsonStr = buffer.toString();
             getWeatherDataFromJson(forecastJsonStr, locationQuery);
         } catch (IOException e) {
+            saveLocationStatus(getContext(), LOCATION_STATUS_SERVER_DOWN);
             Log.e(LOG_TAG, "Error ", e);
             // If the code didn't successfully get the weather data, there's no point in attempting
             // to parse it.
         } catch (JSONException e) {
+            saveLocationStatus(getContext(), LOCATION_STATUS_SERVER_INVALID);
             Log.e(LOG_TAG, e.getMessage(), e);
             e.printStackTrace();
         } finally {
@@ -320,10 +323,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
                 notifyWeather();
             }
-
+            saveLocationStatus(getContext(), LOCATION_STATUS_OK);
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
 
         } catch (JSONException e) {
+            saveLocationStatus(getContext(), LOCATION_STATUS_UNKNOWN);
             Log.e(LOG_TAG, e.getMessage(), e);
             e.printStackTrace();
         }
@@ -546,6 +550,15 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
          * Finally, let's do a sync to get things started
          */
         syncImmediately(context);
+    }
+
+    private static void saveLocationStatus(Context context, @LocationStatus int locationStatus) {
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
+        sharedPreferences.edit()
+                         .putInt(context.getString(R.string.pref_location_status_key),
+                                 locationStatus)
+                         .commit();
     }
 
     public static void initializeSyncAdapter(Context context) {
