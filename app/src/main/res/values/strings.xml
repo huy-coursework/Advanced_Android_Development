@@ -111,5 +111,6 @@
 
     <!-- Error messages -->
     <string name="error_no_data_available">No weather information available</string>
+    <string name="error_offline">No network connection available to fetch weather data</string>
 
 </resources>
