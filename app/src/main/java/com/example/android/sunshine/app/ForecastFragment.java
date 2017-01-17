@@ -309,7 +309,7 @@ public class ForecastFragment extends Fragment
     private void updateErrorMessage() {
         if (mErrorMessageTextView != null) {
             @SunshineSyncAdapter.LocationStatus int locationStatus =
-                    SunshineSyncAdapter.loadLocationStatus(getContext());
+                    Utility.loadLocationStatus(getContext());
             String errorMessage = getString(R.string.empty_forecast_list);
             switch (locationStatus) {
                 case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:

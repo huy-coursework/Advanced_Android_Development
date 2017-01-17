@@ -95,6 +95,24 @@ public class SettingsActivity extends PreferenceActivity
             if (prefIndex >= 0) {
                 preference.setSummary(listPreference.getEntries()[prefIndex]);
             }
+        } else if (getString(R.string.pref_location_key).equals(key)) {
+            @SunshineSyncAdapter.LocationStatus int locationStatus =
+                    Utility.loadLocationStatus(this);
+            String preferenceSummary;
+            switch (locationStatus)
+            {
+                case SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN:
+                    preferenceSummary = getString(R.string.pref_location_unknown_description,
+                                                  stringValue);
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
+                    preferenceSummary = getString(R.string.pref_location_error_description,
+                                                  stringValue);
+                    break;
+                default:
+                    preferenceSummary = stringValue;
+            }
+            preference.setSummary(preferenceSummary);
         } else {
             // For other preferences, set the summary to the value's simple string representation.
             preference.setSummary(stringValue);
@@ -118,6 +136,10 @@ public class SettingsActivity extends PreferenceActivity
         } else if ( key.equals(getString(R.string.pref_units_key)) ) {
             // units have changed. update lists of weather entries accordingly
             getContentResolver().notifyChange(WeatherContract.WeatherEntry.CONTENT_URI, null);
+        } else if ( key.equals(getString(R.string.pref_location_status_key)) ) {
+            Preference locationPreference =
+                    findPreference(getString(R.string.pref_location_key));
+            bindPreferenceSummaryToValue(locationPreference);
         }
     }
 

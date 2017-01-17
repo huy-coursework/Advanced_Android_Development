@@ -21,7 +21,6 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.IntDef;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -39,6 +38,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -159,6 +159,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             }
             forecastJsonStr = buffer.toString();
             getWeatherDataFromJson(forecastJsonStr, locationQuery);
+        } catch (FileNotFoundException e) {
+            saveLocationStatus(getContext(), LOCATION_STATUS_INVALID);
         } catch (IOException e) {
             saveLocationStatus(getContext(), LOCATION_STATUS_SERVER_DOWN);
             Log.e(LOG_TAG, "Error ", e);
@@ -233,11 +235,12 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             JSONObject forecastJson = new JSONObject(forecastJsonStr);
 
             if (forecastJson.has(OWM_MESSAGE_CODE)) {
-                int messageCode = forecastJson.getInt(OWM_MESSAGE_CODE);
+                String messageCode = forecastJson.getString(OWM_MESSAGE_CODE);
                 switch (messageCode) {
-                    case HttpURLConnection.HTTP_OK:
+                    case "200":
                         break;
-                    case HttpURLConnection.HTTP_NOT_FOUND:
+                    case "404":
+                    case "502":
                         saveLocationStatus(getContext(), LOCATION_STATUS_INVALID);
                         break;
                     default:
@@ -581,15 +584,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                          .putInt(context.getString(R.string.pref_location_status_key),
                                  locationStatus)
                          .commit();
-    }
-
-    public static @LocationStatus int loadLocationStatus(Context context) {
-        SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(context);
-        @LocationStatus int locationStatus =
-                sharedPreferences.getInt(context.getString(R.string.pref_location_status_key),
-                                         LOCATION_STATUS_UNKNOWN);
-        return locationStatus;
     }
 
     public static void initializeSyncAdapter(Context context) {
