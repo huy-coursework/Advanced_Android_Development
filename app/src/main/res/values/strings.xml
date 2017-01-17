@@ -110,8 +110,10 @@
     <string name="pref_last_notification">last_notification</string>
 
     <!-- Error messages -->
-    <string name="error_no_data_available">No weather information available</string>
-    <string name="error_offline">No network connection available to fetch weather data</string>
+    <string name="empty_forecast_list">No weather information available.</string>
+    <string name="empty_forecast_list_no_network">No network connection available. The network is not available to fetch weather data.</string>
+    <string name="empty_forecast_list_server_down">No weather information available. The server is not returning data.</string>
+    <string name="empty_forecast_list_server_error">No weather information available. The server is not returning valid data. Please check for an updated version of Sunshine.</string>
 
     <!-- Location status -->
     <string name="pref_location_status_key" translatable="false">location_status</string>

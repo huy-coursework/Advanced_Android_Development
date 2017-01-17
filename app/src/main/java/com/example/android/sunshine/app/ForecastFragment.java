@@ -16,10 +16,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.StringRes;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -36,11 +37,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
  */
-public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class ForecastFragment extends Fragment
+        implements LoaderManager.LoaderCallbacks<Cursor>,
+                   SharedPreferences.OnSharedPreferenceChangeListener {
     public static final String LOG_TAG = ForecastFragment.class.getSimpleName();
     private ForecastAdapter mForecastAdapter;
 
@@ -185,6 +189,22 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         super.onActivityCreated(savedInstanceState);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(getContext());
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(getContext());
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+    }
+
     // since we read the location when we create the loader, all we need to do is restart things
     void onLocationChanged( ) {
         getLoaderManager().restartLoader(FORECAST_LOADER, null, this);
@@ -254,11 +274,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         mForecastAdapter.swapCursor(data);
         boolean isEmpty = !data.moveToFirst();
         if (isEmpty) {
-            if (!Utility.isConnected(getContext())) {
-                updateErrorMessage(R.string.error_offline);
-            } else {
-                updateErrorMessage(R.string.error_no_data_available);
-            }
+            updateErrorMessage();
         }
         if (mPosition != ListView.INVALID_POSITION) {
             // If we don't need to restart the loader, and there's a desired position to restore
@@ -272,6 +288,13 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         mForecastAdapter.swapCursor(null);
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.pref_location_status_key))) {
+            updateErrorMessage();
+        }
+    }
+
     public void setUseTodayLayout(boolean useTodayLayout) {
         mUseTodayLayout = useTodayLayout;
         if (mForecastAdapter != null) {
@@ -279,8 +302,27 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         }
     }
 
-    private void updateErrorMessage(@StringRes int errorMessage) {
+    /**
+     * Updates the empty list view with contextually relevant information that the user can use to
+     * determine why they aren't seeing weather.
+     */
+    private void updateErrorMessage() {
         if (mErrorMessageTextView != null) {
+            @SunshineSyncAdapter.LocationStatus int locationStatus =
+                    SunshineSyncAdapter.loadLocationStatus(getContext());
+            String errorMessage = getString(R.string.empty_forecast_list);
+            switch (locationStatus) {
+                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:
+                    errorMessage = getString(R.string.empty_forecast_list_server_down);
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_INVALID:
+                    errorMessage = getString(R.string.empty_forecast_list_server_error);
+                    break;
+                default:
+                    if (!Utility.isConnected(getContext())) {
+                        errorMessage = getString(R.string.empty_forecast_list_no_network);
+                    }
+            }
             mErrorMessageTextView.setText(errorMessage);
         }
     }

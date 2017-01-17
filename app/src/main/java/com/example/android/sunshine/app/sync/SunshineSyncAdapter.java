@@ -48,6 +48,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Vector;
 
+import static android.preference.PreferenceManager.getDefaultSharedPreferences;
+
 public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     public final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
     // Interval at which to sync with the weather, in seconds.
@@ -336,7 +338,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     private void notifyWeather() {
         Context context = getContext();
         //checking the last update and notify if it' the first of the day
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences prefs = getDefaultSharedPreferences(context);
         String displayNotificationsKey = context.getString(R.string.pref_enable_notifications_key);
         boolean displayNotifications = prefs.getBoolean(displayNotificationsKey,
                 Boolean.parseBoolean(context.getString(R.string.pref_enable_notifications_default)));
@@ -554,11 +556,20 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
     private static void saveLocationStatus(Context context, @LocationStatus int locationStatus) {
         SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(context);
+                getDefaultSharedPreferences(context);
         sharedPreferences.edit()
                          .putInt(context.getString(R.string.pref_location_status_key),
                                  locationStatus)
                          .commit();
+    }
+
+    public static @LocationStatus int loadLocationStatus(Context context) {
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
+        @LocationStatus int locationStatus =
+                sharedPreferences.getInt(context.getString(R.string.pref_location_status_key),
+                                         LOCATION_STATUS_UNKNOWN);
+        return locationStatus;
     }
 
     public static void initializeSyncAdapter(Context context) {
