@@ -77,13 +77,15 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                     LOCATION_STATUS_OK,
                     LOCATION_STATUS_SERVER_DOWN,
                     LOCATION_STATUS_SERVER_INVALID,
-                    LOCATION_STATUS_UNKNOWN
+                    LOCATION_STATUS_UNKNOWN,
+                    LOCATION_STATUS_INVALID
             })
     public @interface LocationStatus {}
     public static final int LOCATION_STATUS_OK = 0;
     public static final int LOCATION_STATUS_SERVER_DOWN = 1;
     public static final int LOCATION_STATUS_SERVER_INVALID = 2;
     public static final int LOCATION_STATUS_UNKNOWN = 3;
+    public static final int LOCATION_STATUS_INVALID = 4;
 
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
@@ -198,6 +200,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
         // These are the names of the JSON objects that need to be extracted.
 
+        // Response information
+        final String OWM_MESSAGE_CODE = "cod";
+
         // Location information
         final String OWM_CITY = "city";
         final String OWM_CITY_NAME = "name";
@@ -226,6 +231,21 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
         try {
             JSONObject forecastJson = new JSONObject(forecastJsonStr);
+
+            if (forecastJson.has(OWM_MESSAGE_CODE)) {
+                int messageCode = forecastJson.getInt(OWM_MESSAGE_CODE);
+                switch (messageCode) {
+                    case HttpURLConnection.HTTP_OK:
+                        break;
+                    case HttpURLConnection.HTTP_NOT_FOUND:
+                        saveLocationStatus(getContext(), LOCATION_STATUS_INVALID);
+                        break;
+                    default:
+                        saveLocationStatus(getContext(), LOCATION_STATUS_SERVER_DOWN);
+                        break;
+                }
+            }
+
             JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
 
             JSONObject cityJson = forecastJson.getJSONObject(OWM_CITY);
