@@ -27,6 +27,7 @@ import android.support.v4.app.TaskStackBuilder;
 import android.text.format.Time;
 import android.util.Log;
 
+import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.BuildConfig;
 import com.example.android.sunshine.app.MainActivity;
 import com.example.android.sunshine.app.R;
@@ -47,6 +48,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Vector;
+import java.util.concurrent.ExecutionException;
 
 import static android.preference.PreferenceManager.getDefaultSharedPreferences;
 
@@ -388,8 +390,37 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
                     int iconId = Utility.getIconResourceForWeatherCondition(weatherId);
                     Resources resources = context.getResources();
-                    Bitmap largeIcon = BitmapFactory.decodeResource(resources,
-                            Utility.getArtResourceForWeatherCondition(weatherId));
+                    int largeIconWidth =
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
+                            resources.getDimensionPixelSize(
+                                    android.R.dimen.notification_large_icon_width) :
+                            resources.getDimensionPixelSize(
+                                    R.dimen.notification_large_icon_default);
+                    int largeIconHeight =
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
+                            resources.getDimensionPixelSize(
+                                    android.R.dimen.notification_large_icon_height) :
+                            resources.getDimensionPixelSize(
+                                    R.dimen.notification_large_icon_default);
+                    Bitmap largeIcon;
+                    try {
+                        largeIcon =
+                                Glide.with(context)
+                                     .load(Utility.getArtUrlForWeatherCondition(context, weatherId))
+                                     .asBitmap()
+                                     .error(iconId)
+                                     .fitCenter()
+                                     .into(largeIconWidth, largeIconHeight)
+                                     .get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        Log.e(LOG_TAG,
+                              "Error loading largeIcon: " +
+                                      Utility.getArtUrlForWeatherCondition(context, weatherId),
+                              e);
+                        largeIcon = BitmapFactory.decodeResource(
+                                resources,
+                                Utility.getArtResourceForWeatherCondition(weatherId));
+                    }
                     String title = context.getString(R.string.app_name);
 
                     // Define the text of the forecast.
