@@ -24,12 +24,9 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-
-    // Android Support
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    compile 'com.android.support:support-annotations:25.1.0'
-    compile 'com.android.support:support-v4:25.1.0'
-
-    // Glide
     compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support:support-v4:25.1.0'
+    compile 'com.android.support:support-annotations:25.1.0'
+    compile 'com.android.support:gridlayout-v7:25.1.0'
 }

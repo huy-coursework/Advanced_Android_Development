@@ -42,14 +42,11 @@ import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
  */
-public class ForecastFragment extends Fragment
-        implements LoaderManager.LoaderCallbacks<Cursor>,
-                   SharedPreferences.OnSharedPreferenceChangeListener {
+public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>, SharedPreferences.OnSharedPreferenceChangeListener {
     public static final String LOG_TAG = ForecastFragment.class.getSimpleName();
     private ForecastAdapter mForecastAdapter;
 
     private ListView mListView;
-    private TextView mErrorMessageTextView;
     private int mPosition = ListView.INVALID_POSITION;
     private boolean mUseTodayLayout;
 
@@ -111,6 +108,20 @@ public class ForecastFragment extends Fragment
     }
 
     @Override
+    public void onResume() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sp.registerOnSharedPreferenceChangeListener(this);
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sp.unregisterOnSharedPreferenceChangeListener(this);
+        super.onPause();
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.forecastfragment, menu);
     }
@@ -145,8 +156,8 @@ public class ForecastFragment extends Fragment
 
         // Get a reference to the ListView, and attach this adapter to it.
         mListView = (ListView) rootView.findViewById(R.id.listview_forecast);
-        mErrorMessageTextView = (TextView) rootView.findViewById(R.id.textview_error_message);
-        mListView.setEmptyView(mErrorMessageTextView);
+        View emptyView = rootView.findViewById(R.id.listview_forecast_empty);
+        mListView.setEmptyView(emptyView);
         mListView.setAdapter(mForecastAdapter);
         // We'll call our MainActivity
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -187,22 +198,6 @@ public class ForecastFragment extends Fragment
     public void onActivityCreated(Bundle savedInstanceState) {
         getLoaderManager().initLoader(FORECAST_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(getContext());
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(getContext());
-        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     // since we read the location when we create the loader, all we need to do is restart things
@@ -272,27 +267,17 @@ public class ForecastFragment extends Fragment
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mForecastAdapter.swapCursor(data);
-        boolean isEmpty = !data.moveToFirst();
-        if (isEmpty) {
-            updateErrorMessage();
-        }
         if (mPosition != ListView.INVALID_POSITION) {
             // If we don't need to restart the loader, and there's a desired position to restore
             // to, do so now.
             mListView.smoothScrollToPosition(mPosition);
         }
+        updateEmptyView();
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         mForecastAdapter.swapCursor(null);
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(getString(R.string.pref_location_status_key))) {
-            updateErrorMessage();
-        }
     }
 
     public void setUseTodayLayout(boolean useTodayLayout) {
@@ -302,31 +287,42 @@ public class ForecastFragment extends Fragment
         }
     }
 
-    /**
-     * Updates the empty list view with contextually relevant information that the user can use to
-     * determine why they aren't seeing weather.
+    /*
+        Updates the empty list view with contextually relevant information that the user can
+        use to determine why they aren't seeing weather.
      */
-    private void updateErrorMessage() {
-        if (mErrorMessageTextView != null) {
-            @SunshineSyncAdapter.LocationStatus int locationStatus =
-                    Utility.loadLocationStatus(getContext());
-            String errorMessage = getString(R.string.empty_forecast_list);
-            switch (locationStatus) {
-                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:
-                    errorMessage = getString(R.string.empty_forecast_list_server_down);
-                    break;
-                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_INVALID:
-                    errorMessage = getString(R.string.empty_forecast_list_server_error);
-                    break;
-                case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
-                    errorMessage = getString(R.string.empty_forecast_list_invalid_location);
-                    break;
-                default:
-                    if (!Utility.isConnected(getContext())) {
-                        errorMessage = getString(R.string.empty_forecast_list_no_network);
-                    }
+    private void updateEmptyView() {
+        if ( mForecastAdapter.getCount() == 0 ) {
+            TextView tv = (TextView) getView().findViewById(R.id.listview_forecast_empty);
+            if ( null != tv ) {
+                // if cursor is empty, why? do we have an invalid location
+                int message = R.string.empty_forecast_list;
+                @SunshineSyncAdapter.LocationStatus int location = Utility.getLocationStatus(getActivity());
+                switch (location) {
+                    case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:
+                        message = R.string.empty_forecast_list_server_down;
+                        break;
+                    case SunshineSyncAdapter.LOCATION_STATUS_SERVER_INVALID:
+                        message = R.string.empty_forecast_list_server_error;
+                        break;
+                    case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
+                        message = R.string.empty_forecast_list_invalid_location;
+                        break;
+                    default:
+                        if (!Utility.isNetworkAvailable(getActivity()) ) {
+                            message = R.string.empty_forecast_list_no_network;
+                        }
+                }
+                tv.setText(message);
             }
-            mErrorMessageTextView.setText(errorMessage);
         }
     }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if ( key.equals(getString(R.string.pref_location_status_key)) ) {
+            updateEmptyView();
+        }
+    }
+
 }

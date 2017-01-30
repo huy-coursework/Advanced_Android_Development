@@ -29,6 +29,8 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
 
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
+    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
 
     private boolean mTwoPane;
     private String mLocation;
@@ -39,11 +41,9 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         mLocation = Utility.getPreferredLocation(this);
 
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
-        }
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         if (findViewById(R.id.weather_detail_container) != null) {
             // The detail container view will be present only in the large-screen layouts
