@@ -59,7 +59,6 @@
         android:layout_below="@id/sunshine_logo_imageview"
         android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material"
         android:layout_marginRight="@dimen/abc_list_item_padding_horizontal_material"
-        android:visibility="invisible"
         app:cardElevation="@dimen/detail_card_elevation"
         app:cardPreventCornerOverlap="false"
         />

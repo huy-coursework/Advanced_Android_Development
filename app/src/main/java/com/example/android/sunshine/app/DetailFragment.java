@@ -180,7 +180,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         }
         ViewParent vp = getView().getParent();
         if ( vp instanceof CardView ) {
-            ((View)vp).setVisibility(View.GONE);
+            ((View)vp).setVisibility(View.INVISIBLE);
         }
         return null;
     }
