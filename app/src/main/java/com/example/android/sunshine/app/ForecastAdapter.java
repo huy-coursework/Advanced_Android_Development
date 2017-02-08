@@ -25,12 +25,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.example.android.sunshine.app.data.WeatherContract;
 
 /**
  * {@link ForecastAdapter} exposes a list of weather forecasts
  * from a {@link Cursor} to a {@link android.widget.ListView}.
  */
-public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHolder> {
+public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ForecastAdapterViewHolder> {
 
     private static final int VIEW_TYPE_TODAY = 0;
     private static final int VIEW_TYPE_FUTURE_DAY = 1;
@@ -40,33 +41,51 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHo
 
     private Context mContext;
     private Cursor mCursor;
+    private ForecastAdapterOnClickHandler mHandler;
+    private View mEmptyView;
 
     /**
      * Cache of the children views for a forecast list item.
      */
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class ForecastAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public final ImageView mIconView;
         public final TextView mDateView;
         public final TextView mDescriptionView;
         public final TextView mHighTempView;
         public final TextView mLowTempView;
 
-        public ViewHolder(View view) {
+        public ForecastAdapterViewHolder(View view) {
             super(view);
             mIconView = (ImageView) view.findViewById(R.id.list_item_icon);
             mDateView = (TextView) view.findViewById(R.id.list_item_date_textview);
             mDescriptionView = (TextView) view.findViewById(R.id.list_item_forecast_textview);
             mHighTempView = (TextView) view.findViewById(R.id.list_item_high_textview);
             mLowTempView = (TextView) view.findViewById(R.id.list_item_low_textview);
+            view.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            mCursor.moveToPosition(getAdapterPosition());
+            Long date =
+                    mCursor.getLong(
+                            mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_DATE));
+            mHandler.onClick(date, this);
         }
     }
 
-    public ForecastAdapter(Context ctx) {
+    public static interface ForecastAdapterOnClickHandler {
+        void onClick(Long date, ForecastAdapterViewHolder viewHolder);
+    }
+
+    public ForecastAdapter(Context ctx, ForecastAdapterOnClickHandler handler, View emptyView) {
         mContext = ctx;
+        mHandler = handler;
+        mEmptyView = emptyView;
     }
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ForecastAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // Choose the layout type
         int layoutId = -1;
         switch (viewType) {
@@ -82,14 +101,14 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHo
 
         View view = LayoutInflater.from(mContext).inflate(layoutId, parent, false);
 
-        ViewHolder viewHolder = new ViewHolder(view);
+        ForecastAdapterViewHolder viewHolder = new ForecastAdapterViewHolder(view);
         view.setTag(viewHolder);
 
         return viewHolder;
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(ForecastAdapterViewHolder viewHolder, int position) {
         mCursor.moveToPosition(position);
         int weatherId = mCursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
         int defaultImage;
@@ -162,6 +181,11 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHo
     public void swapCursor(Cursor newCursor) {
         mCursor = newCursor;
         notifyDataSetChanged();
+        if (mCursor.getCount() > 0) {
+            mEmptyView.setVisibility(View.GONE);
+        } else {
+            mEmptyView.setVisibility(View.VISIBLE);
+        }
     }
 
     public Cursor getCursor() {
