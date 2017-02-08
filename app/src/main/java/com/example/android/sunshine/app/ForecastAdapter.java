@@ -17,7 +17,7 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.support.v4.widget.CursorAdapter;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,19 +30,21 @@ import com.bumptech.glide.Glide;
  * {@link ForecastAdapter} exposes a list of weather forecasts
  * from a {@link Cursor} to a {@link android.widget.ListView}.
  */
-public class ForecastAdapter extends CursorAdapter {
+public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHolder> {
 
-    private static final int VIEW_TYPE_COUNT = 2;
     private static final int VIEW_TYPE_TODAY = 0;
     private static final int VIEW_TYPE_FUTURE_DAY = 1;
 
     // Flag to determine if we want to use a separate view for "today".
     private boolean mUseTodayLayout = true;
 
+    private Context mContext;
+    private Cursor mCursor;
+
     /**
      * Cache of the children views for a forecast list item.
      */
-    public static class ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
         public final ImageView mIconView;
         public final TextView mDateView;
         public final TextView mDescriptionView;
@@ -50,6 +52,7 @@ public class ForecastAdapter extends CursorAdapter {
         public final TextView mLowTempView;
 
         public ViewHolder(View view) {
+            super(view);
             mIconView = (ImageView) view.findViewById(R.id.list_item_icon);
             mDateView = (TextView) view.findViewById(R.id.list_item_date_textview);
             mDescriptionView = (TextView) view.findViewById(R.id.list_item_forecast_textview);
@@ -58,14 +61,13 @@ public class ForecastAdapter extends CursorAdapter {
         }
     }
 
-    public ForecastAdapter(Context context, Cursor c, int flags) {
-        super(context, c, flags);
+    public ForecastAdapter(Context ctx) {
+        mContext = ctx;
     }
 
     @Override
-    public View newView(Context context, Cursor cursor, ViewGroup parent) {
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // Choose the layout type
-        int viewType = getItemViewType(cursor.getPosition());
         int layoutId = -1;
         switch (viewType) {
             case VIEW_TYPE_TODAY: {
@@ -78,22 +80,21 @@ public class ForecastAdapter extends CursorAdapter {
             }
         }
 
-        View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
+        View view = LayoutInflater.from(mContext).inflate(layoutId, parent, false);
 
         ViewHolder viewHolder = new ViewHolder(view);
         view.setTag(viewHolder);
 
-        return view;
+        return viewHolder;
     }
 
     @Override
-    public void bindView(View view, Context context, Cursor cursor) {
-
-        ViewHolder viewHolder = (ViewHolder) view.getTag();
-        int weatherId = cursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
+    public void onBindViewHolder(ViewHolder viewHolder, int position) {
+        mCursor.moveToPosition(position);
+        int weatherId = mCursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
         int defaultImage;
 
-        switch (getItemViewType(cursor.getPosition())) {
+        switch (getItemViewType(mCursor.getPosition())) {
             case VIEW_TYPE_TODAY:
                 defaultImage = Utility.getArtResourceForWeatherCondition(weatherId);
                 break;
@@ -113,9 +114,9 @@ public class ForecastAdapter extends CursorAdapter {
         }
 
         // Read date from cursor
-        long dateInMillis = cursor.getLong(ForecastFragment.COL_WEATHER_DATE);
+        long dateInMillis = mCursor.getLong(ForecastFragment.COL_WEATHER_DATE);
         // Find TextView and set formatted date on it
-        viewHolder.mDateView.setText(Utility.getFriendlyDayString(context, dateInMillis));
+        viewHolder.mDateView.setText(Utility.getFriendlyDayString(mContext, dateInMillis));
 
         // Read weather forecast from cursor
         String description = Utility.getStringForWeatherCondition(mContext, weatherId);
@@ -150,7 +151,20 @@ public class ForecastAdapter extends CursorAdapter {
     }
 
     @Override
-    public int getViewTypeCount() {
-        return VIEW_TYPE_COUNT;
+    public int getItemCount() {
+        if (mCursor != null) {
+            return mCursor.getCount();
+        } else {
+            return 0;
+        }
+    }
+
+    public void swapCursor(Cursor newCursor) {
+        mCursor = newCursor;
+        notifyDataSetChanged();
+    }
+
+    public Cursor getCursor() {
+        return mCursor;
     }
 }
