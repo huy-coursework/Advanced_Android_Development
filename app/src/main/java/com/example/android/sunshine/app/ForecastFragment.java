@@ -178,7 +178,6 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
         // Get a reference to the ListView, and attach this adapter to it.
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerview_forecast);
-        // mRecyclerView.setEmptyView(emptyView);
         mRecyclerView.setAdapter(mForecastAdapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
