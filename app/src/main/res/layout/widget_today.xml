@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:padding="@dimen/widget_margin"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    tools:layout_height="150dp">
+
+    <LinearLayout
+        android:id="@+id/widget"
+        android:orientation="horizontal"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:background="@color/primary">
+
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_gravity="left"
+            android:scaleType="centerInside"
+            tools:src="@drawable/art_clear" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:background="@color/primary">
+
+            <TextView
+                android:id="@+id/widget_high_temperature"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_gravity="center_horizontal"
+                android:gravity="bottom"
+                android:textColor="@color/white"
+                android:textAppearance="?android:textAppearanceLarge"
+                android:fontFamily="sans-serif-condensed"
+                tools:text="97°" />
+
+            <TextView
+                android:id="@+id/widget_low_temperature"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_gravity="center_horizontal"
+                android:gravity="top"
+                android:textColor="@color/grey"
+                android:textAppearance="?android:textAppearanceMedium"
+                android:fontFamily="sans-serif-condensed"
+                tools:text="56°" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

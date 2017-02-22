@@ -8,6 +8,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Build;
+import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.widget.RemoteViews;
 
 import com.example.android.sunshine.app.MainActivity;
@@ -26,11 +29,13 @@ public class WidgetUpdateIntentService extends IntentService {
     private static final String[] FORECAST_COLUMNS = {
             WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
             WeatherContract.WeatherEntry.COLUMN_SHORT_DESC,
-            WeatherContract.WeatherEntry.COLUMN_MAX_TEMP
+            WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
+            WeatherContract.WeatherEntry.COLUMN_MIN_TEMP
     };
     private static final int INDEX_WEATHER_ID = 0;
     private static final int INDEX_SHORT_DESC = 1;
     private static final int INDEX_MAX_TEMP = 2;
+    private static final int INDEX_MIN_TEMP = 3;
 
     public WidgetUpdateIntentService()
     {
@@ -54,19 +59,41 @@ public class WidgetUpdateIntentService extends IntentService {
                 WeatherContract.WeatherEntry.COLUMN_DATE + " ASC");
         if (cursor != null && cursor.moveToFirst())
         {
+            // Determine how to render the widget, based on size.
             int weatherArtResourceId =
                     Utility.getArtResourceForWeatherCondition(cursor.getInt(INDEX_WEATHER_ID));
             String shortDescription = cursor.getString(INDEX_SHORT_DESC);
             double highTemperature = cursor.getDouble(INDEX_MAX_TEMP);
+            double lowTemperature = cursor.getDouble(INDEX_MIN_TEMP);
 
             for (int appWidgetId : appWidgetIds)
             {
-                RemoteViews remoteViews =
-                        new RemoteViews(getPackageName(), R.layout.widget_today_small);
+                int widgetWidth = getWidgetWidth(appWidgetManager, appWidgetId);
+                int defaultWidth =
+                        getResources().getDimensionPixelSize(R.dimen.widget_today_default_width);
+                int largeWidth =
+                        getResources().getDimensionPixelSize(R.dimen.widget_today_large_width);
+
+                RemoteViews remoteViews;
+                if (widgetWidth < defaultWidth) {
+                    remoteViews = new RemoteViews(getPackageName(), R.layout.widget_today_small);
+                } else if (widgetWidth < largeWidth) {
+                    remoteViews = new RemoteViews(getPackageName(), R.layout.widget_today);
+                } else {
+                    remoteViews = new RemoteViews(getPackageName(), R.layout.widget_today_large);
+                }
+
                 remoteViews.setImageViewResource(R.id.widget_icon, weatherArtResourceId);
+                remoteViews.setTextViewText(
+                        R.id.widget_description,
+                        shortDescription);
                 remoteViews.setTextViewText(
                         R.id.widget_high_temperature,
                         Utility.formatTemperature(this, highTemperature));
+                remoteViews.setTextViewText(
+                        R.id.widget_low_temperature,
+                        Utility.formatTemperature(this, lowTemperature));
+
                 // Content Descriptions for RemoteViews were only added in ICS MR1
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
                     setRemoteContentDescription(remoteViews, shortDescription);
@@ -81,6 +108,24 @@ public class WidgetUpdateIntentService extends IntentService {
         }
         if (cursor != null) {
             cursor.close();
+        }
+    }
+
+    private int getWidgetWidth(AppWidgetManager appWidgetManager, int appWidgetId) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            return getResources().getDimensionPixelSize(R.dimen.widget_today_default_width);
+        } else {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetId);
+            if (appWidgetOptions.containsKey(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)) {
+                int minWidth = appWidgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
+                DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+                return (int) TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        minWidth,
+                        displayMetrics);
+            } else {
+                return getResources().getDimensionPixelSize(R.dimen.widget_today_default_width);
+            }
         }
     }
 
