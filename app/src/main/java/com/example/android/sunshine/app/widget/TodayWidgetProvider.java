@@ -1,37 +1,32 @@
 package com.example.android.sunshine.app.widget;
 
-import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
-import android.widget.RemoteViews;
+import android.os.Bundle;
 
-import com.example.android.sunshine.app.MainActivity;
-import com.example.android.sunshine.app.R;
-import com.example.android.sunshine.app.Utility;
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 
 public class TodayWidgetProvider extends AppWidgetProvider {
     @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds);
-
-        int weatherArtResourceId = R.drawable.art_clear;
-        double highTemperature = 24;
-
-        for (int appWidgetId : appWidgetIds) {
-            RemoteViews remoteViews =
-                    new RemoteViews(context.getPackageName(), R.layout.widget_today);
-            remoteViews.setImageViewResource(R.id.widget_icon, weatherArtResourceId);
-            remoteViews.setTextViewText(
-                    R.id.widget_high_temperature,
-                    Utility.formatTemperature(context, highTemperature));
-
-            Intent intent = new Intent(context, MainActivity.class);
-            PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
-            remoteViews.setOnClickPendingIntent(R.id.widget, pendingIntent);
-
-            appWidgetManager.updateAppWidget(appWidgetId, remoteViews);
+    public void onReceive(Context context, Intent intent) {
+        super.onReceive(context, intent);
+        if (SunshineSyncAdapter.ACTION_DATA_UPDATED.equals(intent.getAction())) {
+            context.startService(new Intent(context, WidgetUpdateIntentService.class));
         }
+    }
+
+    @Override
+    public void onAppWidgetOptionsChanged(Context context,
+                                          AppWidgetManager appWidgetManager,
+                                          int appWidgetId,
+                                          Bundle newOptions) {
+        context.startService(new Intent(context, WidgetUpdateIntentService.class));
+    }
+
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        context.startService(new Intent(context, WidgetUpdateIntentService.class));
     }
 }
