@@ -229,4 +229,7 @@
     <!-- For Google Places API Attributions -->
     <string name="attribution_text">Powered by Google</string>
 
+    <!-- Strings related to Muzei source -->
+    <string name="muzei_description">Today\'s weather</string>
+
 </resources>
